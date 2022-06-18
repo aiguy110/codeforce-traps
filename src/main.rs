@@ -26,7 +26,7 @@ impl TrapsPuzzle {
 }
 
 #[derive(PartialEq, Eq)]
-struct ScoreIndexPair(usize, usize);
+struct ScoreIndexPair(i32, usize);
 
 impl Ord for ScoreIndexPair {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -45,7 +45,7 @@ fn naive_solve(puzzle: &TrapsPuzzle) -> usize {
     let mut score_heap = BinaryHeap::with_capacity(puzzle.base_dmgs.len());
     
     for i in 0..puzzle.base_dmgs.len() {
-        let score = puzzle.base_dmgs[i] + (puzzle.base_dmgs.len() - i - 1);
+        let score = (puzzle.base_dmgs[i] as i32) - (puzzle.base_dmgs.len() - i - 1) as i32;
         score_heap.push( ScoreIndexPair(score, i) )
     }
 
@@ -116,6 +116,7 @@ mod tests {
     use super::*;
     use std::io::Cursor;
     use itertools::Itertools;
+    use rand::Rng;
 
     fn brute_force_solve(puzzle: &TrapsPuzzle) -> usize {
         (0..puzzle.base_dmgs.len()).combinations(puzzle.k)
@@ -155,12 +156,38 @@ mod tests {
     }
 
     #[test]
-    fn naive_and_brute_agree_simple() {
+    fn naive_and_brute_agree_single() {
         let puzzle = TrapsPuzzle {
             base_dmgs: vec![8,2,5,15,11,2,8],
             k: 5
         };
 
         assert_eq!(brute_force_solve(&puzzle), naive_solve(&puzzle));
+    }
+
+    fn naive_and_brute_force_agree(n: usize, k: usize, test_count: usize) {
+        let mut puzzle = TrapsPuzzle {
+            base_dmgs: vec![0; n],
+            k: k
+        };
+
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..test_count {
+            for i in 0..n {
+                puzzle.base_dmgs[i] = rng.gen_range(1..n+1);
+            }
+            println!("{:?}", puzzle);
+            assert_eq!(brute_force_solve(&puzzle), naive_solve(&puzzle));
+        }
+    }
+
+    #[test]
+    fn naive_and_brute_agree_many() {
+        for n in 1..10 {
+            for k in 1..n {
+                naive_and_brute_force_agree(n, k, 1000);
+            } 
+        }
     }
 }
