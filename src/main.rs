@@ -1,10 +1,13 @@
 use std::io::BufRead;
+use std::cmp::{Ord, Ordering};
+use std::collections::BinaryHeap;
 
 #[derive(Debug, PartialEq)]
 struct TrapsPuzzle {
     base_dmgs: Vec<usize>,
     k: usize 
 }
+
 
 impl TrapsPuzzle {
     fn dmg_from_skip_inds(&self, skip_inds: &Vec<usize>) -> usize {
@@ -21,6 +24,39 @@ impl TrapsPuzzle {
         total_dmg
     }
 }
+
+#[derive(PartialEq, Eq)]
+struct ScoreIndexPair(usize, usize);
+
+impl Ord for ScoreIndexPair {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+impl PartialOrd for ScoreIndexPair {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+
+fn naive_solve(puzzle: &TrapsPuzzle) -> usize {
+    let mut score_heap = BinaryHeap::with_capacity(puzzle.base_dmgs.len());
+    
+    for i in 0..puzzle.base_dmgs.len() {
+        let score = puzzle.base_dmgs[i] + (puzzle.base_dmgs.len() - i - 1);
+        score_heap.push( ScoreIndexPair(score, i) )
+    }
+
+    let mut skip_inds = Vec::with_capacity(puzzle.k);
+    for _ in 0..puzzle.k {
+        skip_inds.push( score_heap.pop().unwrap().1 );
+    }
+
+    puzzle.dmg_from_skip_inds(&skip_inds)
+}
+
 
 fn parse_traps_puzzle<R>(input: &mut R) -> TrapsPuzzle
     where R: BufRead
@@ -48,6 +84,7 @@ fn parse_traps_puzzle<R>(input: &mut R) -> TrapsPuzzle
     puzzle
 }
 
+
 fn parse_traps_puzzles<R>(input: &mut R) -> Vec<TrapsPuzzle>
     where R: BufRead
 {
@@ -63,6 +100,7 @@ fn parse_traps_puzzles<R>(input: &mut R) -> Vec<TrapsPuzzle>
 
     puzzles
 }
+
 
 fn main() {
     println!("Hello, world!");
@@ -110,5 +148,15 @@ mod tests {
         };
 
         assert_eq!(brute_force_solve(&puzzle), 9);
+    }
+
+    #[test]
+    fn naive_and_brute_agree_simple() {
+        let puzzle = TrapsPuzzle {
+            base_dmgs: vec![8,2,5,15,11,2,8],
+            k: 5
+        };
+
+        assert_eq!(brute_force_solve(&puzzle), naive_solve(&puzzle));
     }
 }
