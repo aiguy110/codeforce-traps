@@ -88,12 +88,13 @@ fn parse_traps_puzzle<R>(input: &mut R) -> TrapsPuzzle
 fn parse_traps_puzzles<R>(input: &mut R) -> Vec<TrapsPuzzle>
     where R: BufRead
 {
+    // Find out how many puzzles we need to read
     let mut buf = String::new();
     input.read_line(&mut buf).unwrap();
     let puzzle_count = buf.trim().parse().unwrap();
 
+    // Read that many puzzles into a Vec
     let mut puzzles = Vec::<TrapsPuzzle>::with_capacity(puzzle_count);
-
     for _ in 0..puzzle_count {
         puzzles.push( parse_traps_puzzle(input) );
     }
@@ -103,7 +104,10 @@ fn parse_traps_puzzles<R>(input: &mut R) -> Vec<TrapsPuzzle>
 
 
 fn main() {
-    println!("Hello, world!");
+    let puzzles = parse_traps_puzzles(&mut std::io::stdin().lock());
+    puzzles.iter()
+        .map(|puzzle| println!("{}", naive_solve(puzzle)))
+        .count();
 }
 
 
