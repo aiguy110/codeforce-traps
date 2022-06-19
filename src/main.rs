@@ -118,13 +118,6 @@ mod tests {
     use itertools::Itertools;
     use rand::Rng;
 
-    fn brute_force_solve(puzzle: &TrapsPuzzle) -> usize {
-        (0..puzzle.base_dmgs.len()).combinations(puzzle.k)
-            .map(|skip_inds| puzzle.dmg_from_skip_inds(&skip_inds))
-            .min()
-            .unwrap()
-    }
-
     #[test]
     fn parse_single_puzzle() {
         let mut input = Cursor::new("3 2\n1 2 3\n");
@@ -145,6 +138,13 @@ mod tests {
         ])
     }
 
+    fn brute_force_solve(puzzle: &TrapsPuzzle) -> usize {
+        (0..puzzle.base_dmgs.len()).combinations(puzzle.k)
+            .map(|skip_inds| puzzle.dmg_from_skip_inds(&skip_inds))
+            .min()
+            .unwrap()
+    }
+
     #[test]
     fn brute_force_solver_works() {
         let puzzle = TrapsPuzzle {
@@ -156,10 +156,20 @@ mod tests {
     }
 
     #[test]
-    fn naive_and_brute_agree_single() {
+    fn naive_and_brute_agree_single_easy() {
         let puzzle = TrapsPuzzle {
             base_dmgs: vec![8,2,5,15,11,2,8],
             k: 5
+        };
+
+        assert_eq!(brute_force_solve(&puzzle), naive_solve(&puzzle));
+    }
+
+    #[test]
+    fn naive_and_brute_agree_single_hard() {
+        let puzzle = TrapsPuzzle {
+            base_dmgs: vec![3,4,4,1],
+            k: 3
         };
 
         assert_eq!(brute_force_solve(&puzzle), naive_solve(&puzzle));
@@ -187,7 +197,7 @@ mod tests {
         for n in 1..10 {
             for k in 1..n {
                 naive_and_brute_force_agree(n, k, 1000);
-            } 
+            }
         }
     }
 }
