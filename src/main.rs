@@ -1,3 +1,4 @@
+#![feature(binary_heap_into_iter_sorted)]
 use std::io::BufRead;
 use std::cmp::{Ord, Ordering};
 use std::collections::BinaryHeap;
@@ -49,10 +50,10 @@ fn naive_solve(puzzle: &TrapsPuzzle) -> usize {
         score_heap.push( ScoreIndexPair(score, i) )
     }
 
-    let mut skip_inds = Vec::with_capacity(puzzle.k);
-    for _ in 0..puzzle.k {
-        skip_inds.push( score_heap.pop().unwrap().1 );
-    }
+    let skip_inds = score_heap.into_iter_sorted()
+        .take(puzzle.k)
+        .map(|pair| pair.1)
+        .collect();
 
     puzzle.dmg_from_skip_inds(&skip_inds)
 }
@@ -117,6 +118,7 @@ mod tests {
     use std::io::Cursor;
     use itertools::Itertools;
     use rand::Rng;
+    use std::time::{Instant, Duration};
 
     #[test]
     fn parse_single_puzzle() {
@@ -199,5 +201,26 @@ mod tests {
                 naive_and_brute_force_agree(n, k, 1000);
             }
         }
+    }
+
+    #[test]
+    fn naive_big_puzzle_finishes_fast() {
+        let n = 200000;
+        let k = 10; //21786;
+
+        let mut puzzle = TrapsPuzzle {
+            base_dmgs: vec![0; n],
+            k: k
+        };
+
+        let mut rng = rand::thread_rng();
+        for i in 0..n {
+            puzzle.base_dmgs[i] = rng.gen_range(1..n+1);
+        }
+
+        let start_time = Instant::now();
+        naive_solve(&puzzle);
+        let solve_duration = Instant::now() - start_time;
+        assert!(solve_duration < Duration::from_secs(1));
     }
 }
