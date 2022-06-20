@@ -1,7 +1,6 @@
-#![feature(binary_heap_into_iter_sorted)]
 use std::io::BufRead;
 use std::cmp::{Ord, Ordering};
-use std::collections::BinaryHeap;
+use std::collections::{HashSet, BinaryHeap};
 
 #[derive(Debug, PartialEq)]
 struct TrapsPuzzle {
@@ -11,11 +10,11 @@ struct TrapsPuzzle {
 
 
 impl TrapsPuzzle {
-    fn dmg_from_skip_inds(&self, skip_inds: &Vec<usize>) -> usize {
+    fn dmg_from_skip_inds(&self, skip_inds: &HashSet<usize>) -> usize {
         let mut total_dmg = 0;
         let mut bonus_dmg = 0;
         for i in 0..self.base_dmgs.len() {
-            if skip_inds.iter().any(|&si| si == i) {
+            if skip_inds.contains(&i) {
                 bonus_dmg += 1;   
             } else {
                 total_dmg += self.base_dmgs[i] + bonus_dmg;
@@ -43,17 +42,16 @@ impl PartialOrd for ScoreIndexPair {
 
 
 fn naive_solve(puzzle: &TrapsPuzzle) -> usize {
-    let mut score_heap = BinaryHeap::with_capacity(puzzle.base_dmgs.len());
-    
+    let mut score_heap = BinaryHeap::with_capacity(puzzle.base_dmgs.len()); 
     for i in 0..puzzle.base_dmgs.len() {
         let score = (puzzle.base_dmgs[i] as i32) - (puzzle.base_dmgs.len() - i - 1) as i32;
         score_heap.push( ScoreIndexPair(score, i) )
     }
 
-    let skip_inds = score_heap.into_iter_sorted()
-        .take(puzzle.k)
-        .map(|pair| pair.1)
-        .collect();
+    let mut skip_inds = HashSet::with_capacity(puzzle.k);
+    for _ in 0..puzzle.k {
+        skip_inds.insert( score_heap.pop().unwrap().1 );
+    }
 
     puzzle.dmg_from_skip_inds(&skip_inds)
 }
@@ -142,7 +140,8 @@ mod tests {
 
     fn brute_force_solve(puzzle: &TrapsPuzzle) -> usize {
         (0..puzzle.base_dmgs.len()).combinations(puzzle.k)
-            .map(|skip_inds| puzzle.dmg_from_skip_inds(&skip_inds))
+            .map( |skip_inds| HashSet::from_iter(skip_inds.into_iter()) )
+            .map( |skip_inds| puzzle.dmg_from_skip_inds(&skip_inds))
             .min()
             .unwrap()
     }
@@ -189,7 +188,6 @@ mod tests {
             for i in 0..n {
                 puzzle.base_dmgs[i] = rng.gen_range(1..n+1);
             }
-            println!("{:?}", puzzle);
             assert_eq!(brute_force_solve(&puzzle), naive_solve(&puzzle));
         }
     }
@@ -206,7 +204,7 @@ mod tests {
     #[test]
     fn naive_big_puzzle_finishes_fast() {
         let n = 200000;
-        let k = 10; //21786;
+        let k = 21786;
 
         let mut puzzle = TrapsPuzzle {
             base_dmgs: vec![0; n],
@@ -221,6 +219,7 @@ mod tests {
         let start_time = Instant::now();
         naive_solve(&puzzle);
         let solve_duration = Instant::now() - start_time;
+        println!("Big puzzle solve time: {:?}", solve_duration);
         assert!(solve_duration < Duration::from_secs(1));
     }
 }
